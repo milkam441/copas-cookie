@@ -44,6 +44,39 @@ export default function CookieItem({ cookie, onCopy, variant = 'user' }: CookieI
     }
   };
 
+  const handleCopyName = async () => {
+    // Copy cookie name
+    const textToCopy = cookie.name;
+
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(textToCopy);
+        showToast('Copied!', 'Cookie name copied to clipboard.', 'success');
+        return;
+      } else {
+        const textArea = document.createElement('textarea');
+        textArea.value = textToCopy;
+        textArea.style.position = 'fixed';
+        textArea.style.left = '-999999px';
+        textArea.style.top = '-999999px';
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+        
+        const successful = document.execCommand('copy');
+        document.body.removeChild(textArea);
+
+        if (successful) {
+          showToast('Copied!', 'Cookie name copied to clipboard.', 'success');
+        } else {
+          throw new Error('execCommand failed');
+        }
+      }
+    } catch (err) {
+      showToast('Error', 'Failed to copy to clipboard. Please try manually selecting the text.', 'error');
+    }
+  };
+
   const handleCopy = async () => {
     // Always copy just the value for main copy button
     const textToCopy = cookie.value;
@@ -106,8 +139,17 @@ export default function CookieItem({ cookie, onCopy, variant = 'user' }: CookieI
   return (
     <div className="bg-dark-900 rounded border border-slate-700 overflow-hidden">
       {/* Main row */}
-      <div className="p-2.5 flex justify-between items-center">
-        <div className="text-xs font-medium text-slate-300 truncate w-1/2">{cookie.name}</div>
+      <div className="p-2.5 flex justify-between items-center gap-2">
+        <div className="flex items-center gap-2 flex-1 min-w-0">
+          <span className="text-xs font-medium text-slate-300 truncate">{cookie.name}</span>
+          <button
+            onClick={handleCopyName}
+            className="text-xs bg-brand-600/10 hover:bg-brand-600/30 text-brand-400 hover:text-brand-300 border border-brand-600/30 px-2 py-1 rounded transition-all flex items-center gap-1 flex-shrink-0"
+            title="Copy cookie name"
+          >
+            <Copy className="w-3 h-3" />
+          </button>
+        </div>
         <div className="flex items-center gap-2 flex-shrink-0">
           {isFullType && (
             <button
@@ -125,6 +167,7 @@ export default function CookieItem({ cookie, onCopy, variant = 'user' }: CookieI
           <button
             onClick={handleCopy}
             className="text-xs bg-brand-600/10 hover:bg-brand-600/30 text-brand-400 hover:text-brand-300 border border-brand-600/30 px-3 py-1.5 rounded transition-all flex items-center gap-1 font-semibold"
+            title="Copy cookie value"
           >
             <Copy className="w-3 h-3" />
             Copy

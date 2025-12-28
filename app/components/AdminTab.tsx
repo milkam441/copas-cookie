@@ -159,6 +159,12 @@ export default function AdminTab() {
                     } else if (preset.name === 'ChatGPT') {
                       buttonClass = 'bg-green-900/30 border-green-800 text-green-400 hover:bg-green-900/50';
                       icon = <Brain className="w-3 h-3" />;
+                    } else if (preset.name === 'Disney+') {
+                      buttonClass = 'bg-blue-900/30 border-blue-800 text-blue-400 hover:bg-blue-900/50';
+                      icon = <Tv className="w-3 h-3" />;
+                    } else if (preset.name === 'Perplexity') {
+                      buttonClass = 'bg-blue-900/30 border-blue-800 text-blue-400 hover:bg-blue-900/50';
+                      icon = <Brain className="w-3 h-3" />;
                     } else {
                       buttonClass = 'bg-slate-700/30 border-slate-600 text-slate-300 hover:bg-slate-700/50';
                     }

@@ -61,7 +61,22 @@ export const PRESETS: Record<string, Preset> = {
         httpOnly: true,
         secure: true,
         sameSite: undefined,
-        prioritas: 'medium',
+        prioritas: 'Medium',
+      },
+    ],
+  },
+  disneyplus: {
+    type: 'full',
+    name: 'Disney+',
+    group: 'streaming',
+    cookies: [
+      {
+        name: 'userUP',
+        domain: '.www.apps.disneyplus.com',
+        httpOnly: false,
+        secure: true,
+        sameSite: 'None',
+        prioritas: 'Medium',
       },
     ],
   },
@@ -77,7 +92,7 @@ export const PRESETS: Record<string, Preset> = {
         httpOnly: true,
         secure: true,
         sameSite: undefined,
-        prioritas: 'medium',
+        prioritas: 'Medium',
       },
       {
         name: '__Host-next-auth.csrf-token',
@@ -85,7 +100,23 @@ export const PRESETS: Record<string, Preset> = {
         httpOnly: true,
         secure: true,
         sameSite: undefined,
-        prioritas: 'medium',
+        prioritas: 'Medium',
+      },
+    ],
+  },
+
+  perplexity : {
+    type: 'full',
+    name: 'Perplexity',
+    group: 'ai',
+    cookies: [
+      {
+        name: '__Secure-next-auth.session-token',
+        domain: '.www.perplexity.ai',
+        httpOnly: true,
+        secure: true,
+        sameSite: "Lax",
+        prioritas: 'Medium',
       },
     ],
   },
