@@ -88,18 +88,18 @@ export const PRESETS: Record<string, Preset> = {
     cookies: [
       {
         name: '__Secure-next-auth.session-token',
-        domain: '',
+        domain: '.chatgpt.com',
         httpOnly: true,
         secure: true,
-        sameSite: undefined,
+        sameSite: "Lax",
         prioritas: 'Medium',
       },
       {
         name: '__Host-next-auth.csrf-token',
-        domain: '',
+        domain: '.chatgpt.com',
         httpOnly: true,
         secure: true,
-        sameSite: undefined,
+        sameSite: "Lax",
         prioritas: 'Medium',
       },
     ],
