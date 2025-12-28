@@ -61,6 +61,7 @@ export default function CookieForm({ cookies, onChange, showAdvanced = false }: 
                     onChange={(e) => updateCookie(index, 'name', e.target.value)}
                     placeholder="Cookie Name"
                     className="cookie-name w-full bg-dark-800 border border-slate-600 rounded-md p-2 text-xs text-brand-300 placeholder-slate-600 focus:border-brand-500 outline-none"
+                    suppressHydrationWarning
                   />
                   {showAdvanced && (
                     <input
@@ -69,6 +70,7 @@ export default function CookieForm({ cookies, onChange, showAdvanced = false }: 
                       onChange={(e) => updateCookie(index, 'prioritas', e.target.value || undefined)}
                       placeholder="Prioritas (optional)"
                       className="w-full bg-dark-800 border border-slate-600 rounded-md p-2 text-xs text-white placeholder-slate-600 focus:border-brand-500 outline-none"
+                      suppressHydrationWarning
                     />
                   )}
                 </div>
@@ -77,6 +79,7 @@ export default function CookieForm({ cookies, onChange, showAdvanced = false }: 
                   onChange={(e) => updateCookie(index, 'value', e.target.value)}
                   placeholder="Paste Cookie Value here..."
                   className="cookie-value w-full bg-dark-800 border border-slate-600 rounded-md p-2 text-xs text-white placeholder-slate-600 h-16 resize-none focus:border-brand-500 outline-none"
+                  suppressHydrationWarning
                 />
                 
                 {/* Field Advanced - langsung tampil jika showAdvanced=true, atau bisa di-expand jika showAdvanced=false */}
@@ -88,6 +91,7 @@ export default function CookieForm({ cookies, onChange, showAdvanced = false }: 
                       onChange={(e) => updateCookie(index, 'domain', e.target.value || undefined)}
                       placeholder="Domain (e.g. .example.com)"
                       className="w-full bg-dark-800 border border-slate-600 rounded-md p-2 text-xs text-white placeholder-slate-600 focus:border-brand-500 outline-none"
+                      suppressHydrationWarning
                     />
                     <div className="grid grid-cols-3 gap-2">
                       <label className="flex items-center gap-2 text-xs text-slate-400 cursor-pointer">
@@ -96,6 +100,7 @@ export default function CookieForm({ cookies, onChange, showAdvanced = false }: 
                           checked={cookie.httpOnly || false}
                           onChange={(e) => updateCookie(index, 'httpOnly', e.target.checked)}
                           className="w-4 h-4 rounded border-slate-600 bg-dark-800 text-brand-600 focus:ring-brand-500"
+                          suppressHydrationWarning
                         />
                         HttpOnly
                       </label>
@@ -105,6 +110,7 @@ export default function CookieForm({ cookies, onChange, showAdvanced = false }: 
                           checked={cookie.secure || false}
                           onChange={(e) => updateCookie(index, 'secure', e.target.checked)}
                           className="w-4 h-4 rounded border-slate-600 bg-dark-800 text-brand-600 focus:ring-brand-500"
+                          suppressHydrationWarning
                         />
                         Secure
                       </label>
@@ -112,6 +118,7 @@ export default function CookieForm({ cookies, onChange, showAdvanced = false }: 
                         value={cookie.sameSite || ''}
                         onChange={(e) => updateCookie(index, 'sameSite', e.target.value || undefined)}
                         className="w-full bg-dark-800 border border-slate-600 rounded-md p-2 text-xs text-white focus:border-brand-500 outline-none"
+                        suppressHydrationWarning
                       >
                         <option value="">SameSite (optional)</option>
                         <option value="Strict">Strict</option>

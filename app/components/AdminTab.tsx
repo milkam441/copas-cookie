@@ -183,6 +183,7 @@ export default function AdminTab() {
             onChange={(e) => setWebsiteName(e.target.value)}
             placeholder="e.g. Netflix Premium"
             className="w-full bg-dark-900 border border-slate-600 rounded-lg p-2.5 text-white placeholder-slate-500 focus:ring-2 focus:ring-brand-600 focus:border-transparent outline-none transition-all"
+            suppressHydrationWarning
           />
         </div>
 
@@ -197,6 +198,7 @@ export default function AdminTab() {
                 onChange={(e) => setUsername(e.target.value)}
                 placeholder="Username"
                 className="w-full bg-dark-900 border border-slate-600 rounded-lg p-2.5 text-white placeholder-slate-500 focus:ring-2 focus:ring-brand-600 focus:border-transparent outline-none transition-all"
+                suppressHydrationWarning
               />
             </div>
             <div>
@@ -207,6 +209,7 @@ export default function AdminTab() {
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Password"
                 className="w-full bg-dark-900 border border-slate-600 rounded-lg p-2.5 text-white placeholder-slate-500 focus:ring-2 focus:ring-brand-600 focus:border-transparent outline-none transition-all"
+                suppressHydrationWarning
               />
             </div>
           </div>

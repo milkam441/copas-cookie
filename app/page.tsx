@@ -1,20 +1,30 @@
 'use client';
 
 import { useState } from 'react';
-import { Cookie, ShieldCheck, Users } from 'lucide-react';
+import { Cookie, ShieldCheck, Users, HelpCircle } from 'lucide-react';
 import AdminTab from './components/AdminTab';
 import UserTab from './components/UserTab';
 import { ToastProvider } from './components/ToastContext';
+import FAQModal from './components/FAQModal';
 
 export default function Home() {
   const [activeTab, setActiveTab] = useState<'admin' | 'user'>('admin');
+  const [isFAQOpen, setIsFAQOpen] = useState(false);
 
   return (
     <ToastProvider>
       <div className="bg-dark-900 text-slate-200 min-h-screen flex flex-col items-center p-4">
         <div className="w-full max-w-5xl">
         {/* Header */}
-        <header className="mb-8 text-center pt-6">
+        <header className="mb-8 text-center pt-6 relative">
+          <button
+            onClick={() => setIsFAQOpen(true)}
+            className="absolute top-6 right-0 p-2 text-slate-400 hover:text-brand-400 hover:bg-dark-800 rounded-lg transition-all duration-200 flex items-center gap-2"
+            title="Buka Tutorial & Panduan"
+          >
+            <HelpCircle className="w-5 h-5" />
+            <span className="text-sm font-medium hidden sm:inline">FAQ</span>
+          </button>
           <h1 className="text-3xl md:text-4xl font-bold text-white mb-2 flex justify-center items-center gap-2">
             <Cookie className="text-yellow-500 w-8 h-8" />
             Cookie Manager
@@ -56,6 +66,7 @@ export default function Home() {
           {activeTab === 'admin' ? <AdminTab /> : <UserTab />}
         </div>
       </div>
+      <FAQModal isOpen={isFAQOpen} onClose={() => setIsFAQOpen(false)} />
     </ToastProvider>
   );
 }
