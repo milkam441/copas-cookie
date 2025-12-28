@@ -9,12 +9,18 @@ export function useLocalStorage() {
   const [isLoading, setIsLoading] = useState(true);
   const [mounted, setMounted] = useState(false);
 
-  const refreshEntries = useCallback(() => {
-    // Only access localStorage on client side
+  const refreshEntries = useCallback(async () => {
+    // Only fetch on client side
     if (typeof window !== 'undefined') {
-      const activeEntries = getActiveEntries();
-      setEntries(activeEntries);
-      setIsLoading(false);
+      try {
+        setIsLoading(true);
+        const activeEntries = await getActiveEntries();
+        setEntries(activeEntries);
+      } catch (error) {
+        console.error('Error refreshing entries:', error);
+      } finally {
+        setIsLoading(false);
+      }
     }
   }, []);
 
@@ -25,13 +31,12 @@ export function useLocalStorage() {
     // Load initial data after mount
     refreshEntries();
 
-    // Listen for storage changes (for cross-tab sync)
-    const handleStorageChange = () => {
+    // Poll for updates every 5 seconds (for multi-computer sync)
+    const interval = setInterval(() => {
       refreshEntries();
-    };
+    }, 5000);
 
-    window.addEventListener('storage', handleStorageChange);
-    return () => window.removeEventListener('storage', handleStorageChange);
+    return () => clearInterval(interval);
   }, [refreshEntries]);
 
   // Return empty array during SSR and initial client render to prevent hydration mismatch

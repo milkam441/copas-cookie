@@ -4,13 +4,13 @@ import { useEffect, useState, useRef } from 'react';
 import { Entry } from '@/app/types';
 import { formatTime, getTimeRemaining, isExpired, ONE_HOUR_MS } from '@/app/utils/formatTime';
 import { FormattedTime } from '@/app/utils/formatTime';
-import { saveEntries } from '@/app/utils/storage';
 
 export function useTimer(entries: Entry[], onExpired?: () => void) {
   const [timers, setTimers] = useState<Record<number, FormattedTime>>({});
   const onExpiredRef = useRef(onExpired);
   const entriesRef = useRef<Entry[]>(entries);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const lastExpiredCheckRef = useRef<number>(Date.now());
 
   // Update refs when values change
   useEffect(() => {
@@ -42,28 +42,23 @@ export function useTimer(entries: Entry[], onExpired?: () => void) {
   useEffect(() => {
     // Update timers every second
     intervalRef.current = setInterval(() => {
-      let hasExpired = false;
       const currentEntries = entriesRef.current;
+      const now = Date.now();
 
-      // Check for expired entries and remove them
-      const activeEntries = currentEntries.filter((entry) => {
-        if (isExpired(entry.createdAt)) {
-          hasExpired = true;
-          return false;
-        }
-        return true;
-      });
+      // Check for expired entries (cleanup is done on server, but we check for UI updates)
+      const hasExpired = currentEntries.some((entry) => isExpired(entry.createdAt));
 
-      if (hasExpired) {
-        saveEntries(activeEntries);
+      // Refresh data from server if expired entries detected (every 5 seconds to avoid too many requests)
+      if (hasExpired && now - lastExpiredCheckRef.current > 5000) {
+        lastExpiredCheckRef.current = now;
         if (onExpiredRef.current) {
           onExpiredRef.current();
         }
       }
 
-      // Update timer displays for all active entries
+      // Update timer displays for all entries (server will filter expired ones)
       const timerMap: Record<number, FormattedTime> = {};
-      activeEntries.forEach((entry) => {
+      currentEntries.forEach((entry) => {
         const remaining = getTimeRemaining(entry.createdAt);
         timerMap[entry.id] = formatTime(remaining);
       });

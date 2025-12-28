@@ -68,7 +68,7 @@ export default function AdminTab() {
     setActivePreset(null);
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     const trimmedWebsite = websiteName.trim();
     if (!trimmedWebsite) {
       showToast('Error', 'Website Name is required', 'error');
@@ -95,21 +95,29 @@ export default function AdminTab() {
       }
     }
 
-    addEntry(
-      trimmedWebsite,
-      validCookies,
-      hasUsername ? username.trim() : undefined,
-      hasPassword ? password.trim() : undefined
-    );
-    resetForm();
-    refreshEntries();
-    showToast('Success', 'Entry added successfully!', 'success');
+    try {
+      await addEntry(
+        trimmedWebsite,
+        validCookies,
+        hasUsername ? username.trim() : undefined,
+        hasPassword ? password.trim() : undefined
+      );
+      resetForm();
+      refreshEntries();
+      showToast('Success', 'Entry added successfully!', 'success');
+    } catch (error) {
+      showToast('Error', 'Failed to save entry. Please try again.', 'error');
+    }
   };
 
-  const handleDelete = (id: number) => {
-    deleteEntry(id);
-    refreshEntries();
-    showToast('Deleted', 'Entry removed.', 'info');
+  const handleDelete = async (id: number) => {
+    try {
+      await deleteEntry(id);
+      refreshEntries();
+      showToast('Deleted', 'Entry removed.', 'info');
+    } catch (error) {
+      showToast('Error', 'Failed to delete entry. Please try again.', 'error');
+    }
   };
 
   const totalCookies = entries.reduce((sum, entry) => sum + entry.cookies.length, 0);

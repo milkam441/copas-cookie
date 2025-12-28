@@ -1,65 +1,73 @@
-import { Entry, StorageData, Cookie } from '@/app/types';
+import { Entry, Cookie } from '@/app/types';
 
-const DB_KEY = 'cookieManagerDB';
+const API_BASE = '/api/entries';
 
-export function getEntries(): Entry[] {
-  if (typeof window === 'undefined') return [];
-  
+export async function getEntries(): Promise<Entry[]> {
   try {
-    const data = localStorage.getItem(DB_KEY);
-    if (!data) return [];
-    
-    const parsed: StorageData = JSON.parse(data);
-    return parsed.entries || [];
+    const response = await fetch(API_BASE);
+    if (!response.ok) {
+      throw new Error('Failed to fetch entries');
+    }
+    const data = await response.json();
+    return data.entries || [];
   } catch (error) {
-    console.error('Error reading from localStorage:', error);
+    console.error('Error fetching entries:', error);
     return [];
   }
 }
 
-export function saveEntries(entries: Entry[]): void {
-  if (typeof window === 'undefined') return;
-  
-  try {
-    const data: StorageData = { entries };
-    localStorage.setItem(DB_KEY, JSON.stringify(data));
-  } catch (error) {
-    console.error('Error saving to localStorage:', error);
-  }
-}
-
-export function addEntry(
+export async function addEntry(
   website: string,
   cookies: Cookie[],
   username?: string,
   password?: string
-): Entry {
-  const entries = getEntries();
-  const newEntry: Entry = {
-    id: Date.now(),
-    website,
-    cookies,
-    username,
-    password,
-    createdAt: Date.now(),
-  };
-  
-  entries.unshift(newEntry);
-  saveEntries(entries);
-  return newEntry;
+): Promise<Entry> {
+  try {
+    const response = await fetch(API_BASE, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        website,
+        cookies,
+        username,
+        password,
+      }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || 'Failed to add entry');
+    }
+
+    const data = await response.json();
+    return data.entry;
+  } catch (error) {
+    console.error('Error adding entry:', error);
+    throw error;
+  }
 }
 
-export function deleteEntry(id: number): void {
-  const entries = getEntries();
-  const filtered = entries.filter((e) => e.id !== id);
-  saveEntries(filtered);
+export async function deleteEntry(id: number): Promise<void> {
+  try {
+    const response = await fetch(`${API_BASE}/${id}`, {
+      method: 'DELETE',
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || 'Failed to delete entry');
+    }
+  } catch (error) {
+    console.error('Error deleting entry:', error);
+    throw error;
+  }
 }
 
-export function getActiveEntries(): Entry[] {
-  const entries = getEntries();
-  const now = Date.now();
-  const ONE_HOUR_MS = 3600000;
-  
-  return entries.filter((e) => now - e.createdAt <= ONE_HOUR_MS);
+export async function getActiveEntries(): Promise<Entry[]> {
+  // Server already filters expired entries, so just return all
+  return getEntries();
 }
+
 
