@@ -120,6 +120,30 @@ export const PRESETS: Record<string, Preset> = {
       },
     ],
   },
+
+  merlin : {
+    type: 'credentials',
+    name: 'Merlin AI',
+    group: 'ai',
+    username: '',
+    password: '',
+  },
+
+  cursor : {
+    type: 'full',
+    name: 'Cursor',
+    group: 'ai',
+    cookies: [
+      {
+        name: 'WorkosCursorSessionToken',
+        domain: '.cursor.com',
+        httpOnly: true,
+        secure: true,
+        sameSite: "Lax",
+        prioritas: 'Medium',
+      },
+    ],
+  },
 };
 
 export function getPreset(type: string): Preset | null {
