@@ -6,7 +6,7 @@ import { Entry, Cookie } from '@/app/types';
 import { useLocalStorage } from '@/app/hooks/useLocalStorage';
 import { useTimer } from '@/app/hooks/useTimer';
 import { addEntry, deleteEntry } from '@/app/utils/storage';
-import { getPreset, PRESETS } from '@/app/utils/presets';
+import { getPreset, getPresetsByGroup } from '@/app/utils/presets';
 import { useToast } from './ToastContext';
 import Statistics from './Statistics';
 import EntryCard from './EntryCard';
@@ -130,47 +130,64 @@ export default function AdminTab() {
 
         {/* Presets */}
         <div className="mb-6">
-          <label className="block text-sm font-medium text-slate-400 mb-2">Quick Presets</label>
-          <div className="flex flex-wrap gap-2">
-            <button
-              onClick={() => applyPreset('netflix')}
-              className="flex items-center gap-2 px-3 py-1.5 bg-red-900/30 border border-red-800 text-red-400 rounded hover:bg-red-900/50 transition-colors text-sm"
-            >
-              <Film className="w-3 h-3" />
-              Netflix
-            </button>
+          <label className="block text-sm font-medium text-slate-400 mb-3">Quick Presets</label>
+          <div className="space-y-4">
+            {Object.entries(getPresetsByGroup()).map(([groupName, presets]) => (
+              <div key={groupName} className="bg-dark-900/50 border border-slate-700 rounded-lg p-3">
+                <div className="flex items-center gap-2 mb-2">
+                  {groupName === 'streaming' && <PlayCircle className="w-4 h-4 text-blue-400" />}
+                  {groupName === 'ai' && <Brain className="w-4 h-4 text-green-400" />}
+                  <span className="text-xs font-semibold text-slate-400 uppercase tracking-wide">
+                    {groupName}
+                  </span>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {presets.map(({ key, preset }) => {
+                    const isActive = activePreset === key;
+                    let buttonClass = '';
+                    let icon = null;
 
-            <button
-              onClick={() => applyPreset('hbogo')}
-              className="flex items-center gap-2 px-3 py-1.5 bg-purple-900/30 border border-purple-800 text-purple-400 rounded hover:bg-purple-900/50 transition-colors text-sm"
-            >
-              <User className="w-3 h-3" />
-              HBO Go
-            </button>
+                    if (preset.name === 'Netflix') {
+                      buttonClass = 'bg-red-900/30 border-red-800 text-red-400 hover:bg-red-900/50';
+                      icon = <Film className="w-3 h-3" />;
+                    } else if (preset.name === 'HBO Go') {
+                      buttonClass = 'bg-purple-900/30 border-purple-800 text-purple-400 hover:bg-purple-900/50';
+                      icon = <User className="w-3 h-3" />;
+                    } else if (preset.name === 'BStation') {
+                      buttonClass = 'bg-blue-900/30 border-blue-800 text-blue-400 hover:bg-blue-900/50';
+                      icon = <Tv className="w-3 h-3" />;
+                    } else if (preset.name === 'ChatGPT') {
+                      buttonClass = 'bg-green-900/30 border-green-800 text-green-400 hover:bg-green-900/50';
+                      icon = <Brain className="w-3 h-3" />;
+                    } else {
+                      buttonClass = 'bg-slate-700/30 border-slate-600 text-slate-300 hover:bg-slate-700/50';
+                    }
 
-            <button
-              onClick={() => applyPreset('bstation')}
-              className="flex items-center gap-2 px-3 py-1.5 bg-blue-900/30 border border-blue-800 text-blue-400 rounded hover:bg-blue-900/50 transition-colors text-sm"
-            >
-              <Tv className="w-3 h-3" />
-              BStation
-            </button>
-
-            <button
-              onClick={() => applyPreset('chatgpt')}
-              className="flex items-center gap-2 px-3 py-1.5 bg-green-900/30 border border-green-800 text-green-400 rounded hover:bg-green-900/50 transition-colors text-sm"
-            >
-              <Brain className="w-3 h-3" />
-              ChatGPT
-            </button>
-            
-            <button
-              onClick={resetForm}
-              className="flex items-center gap-2 px-3 py-1.5 bg-slate-700 border border-slate-600 text-slate-300 rounded hover:bg-slate-600 transition-colors text-sm ml-auto"
-            >
-              <RotateCcw className="w-3 h-3" />
-              Reset
-            </button>
+                    return (
+                      <button
+                        key={key}
+                        onClick={() => applyPreset(key)}
+                        className={`flex items-center gap-2 px-3 py-1.5 border rounded transition-colors text-sm ${
+                          isActive ? 'ring-2 ring-brand-500' : ''
+                        } ${buttonClass}`}
+                      >
+                        {icon}
+                        {preset.name}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
+            <div className="flex justify-end">
+              <button
+                onClick={resetForm}
+                className="flex items-center gap-2 px-3 py-1.5 bg-slate-700 border border-slate-600 text-slate-300 rounded hover:bg-slate-600 transition-colors text-sm"
+              >
+                <RotateCcw className="w-3 h-3" />
+                Reset
+              </button>
+            </div>
           </div>
         </div>
 

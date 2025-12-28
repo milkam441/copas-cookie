@@ -5,12 +5,14 @@ export type PresetType = 'simple' | 'full' | 'credentials';
 export interface SimplePreset {
   type: 'simple';
   name: string;
+  group?: string;
   cookies: string[]; // cookie names only
 }
 
 export interface FullPreset {
   type: 'full';
   name: string;
+  group?: string;
   cookies: Array<{
     name: string;
     domain?: string;
@@ -24,6 +26,7 @@ export interface FullPreset {
 export interface CredentialsPreset {
   type: 'credentials';
   name: string;
+  group?: string;
   username?: string;
   password?: string;
   cookies?: string[]; // optional cookie names
@@ -35,12 +38,14 @@ export const PRESETS: Record<string, Preset> = {
   netflix: {
     type: 'simple',
     name: 'Netflix',
+    group: 'streaming',
     cookies: ['SecureNetflixId', 'NetflixId'],
   },
 
   hbogo: {
     type: 'credentials',
     name: 'HBO Go',
+    group: 'streaming',
     username: '',
     password: '',
   },
@@ -48,6 +53,7 @@ export const PRESETS: Record<string, Preset> = {
   bstation: {
     type: 'full',
     name: 'BStation',
+    group: 'streaming',
     cookies: [
       {
         name: 'SESSDATA',
@@ -63,6 +69,7 @@ export const PRESETS: Record<string, Preset> = {
   chatgpt : {
     type: 'full',
     name: 'ChatGPT',
+    group: 'ai',
     cookies: [
       {
         name: '__Secure-next-auth.session-token',
@@ -86,5 +93,19 @@ export const PRESETS: Record<string, Preset> = {
 
 export function getPreset(type: string): Preset | null {
   return PRESETS[type] || null;
+}
+
+export function getPresetsByGroup(): Record<string, Array<{ key: string; preset: Preset }>> {
+  const grouped: Record<string, Array<{ key: string; preset: Preset }>> = {};
+  
+  Object.entries(PRESETS).forEach(([key, preset]) => {
+    const group = preset.group || 'other';
+    if (!grouped[group]) {
+      grouped[group] = [];
+    }
+    grouped[group].push({ key, preset });
+  });
+  
+  return grouped;
 }
 
