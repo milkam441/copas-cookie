@@ -30,3 +30,26 @@ export interface Toast {
   type: ToastType;
 }
 
+// Preset Types
+export type PresetType = 'simple' | 'full' | 'credentials';
+
+export interface PresetCookie {
+  name: string;
+  domain?: string;
+  httpOnly?: boolean;
+  secure?: boolean;
+  sameSite?: 'Strict' | 'Lax' | 'None';
+  prioritas?: string;
+}
+
+export interface Preset {
+  id: number;
+  key: string;
+  type: PresetType;
+  name: string;
+  group: string;
+  cookies: PresetCookie[];
+  createdAt: number;
+  updatedAt: number;
+}
+

@@ -1,5 +1,5 @@
 import Database from 'better-sqlite3';
-import { Entry, Cookie } from '@/app/types';
+import { Entry, Cookie, Preset, PresetCookie } from '@/app/types';
 import path from 'path';
 import fs from 'fs';
 
@@ -43,8 +43,32 @@ function getDb(): Database.Database {
         FOREIGN KEY (entryId) REFERENCES entries(id) ON DELETE CASCADE
       );
       
+      CREATE TABLE IF NOT EXISTS presets (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        key TEXT NOT NULL UNIQUE,
+        type TEXT NOT NULL CHECK(type IN ('simple', 'full', 'credentials')),
+        name TEXT NOT NULL,
+        grp TEXT NOT NULL DEFAULT 'other',
+        createdAt INTEGER NOT NULL,
+        updatedAt INTEGER NOT NULL
+      );
+      
+      CREATE TABLE IF NOT EXISTS preset_cookies (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        presetId INTEGER NOT NULL,
+        name TEXT NOT NULL,
+        domain TEXT,
+        httpOnly INTEGER DEFAULT 0,
+        secure INTEGER DEFAULT 0,
+        sameSite TEXT,
+        prioritas TEXT,
+        FOREIGN KEY (presetId) REFERENCES presets(id) ON DELETE CASCADE
+      );
+      
       CREATE INDEX IF NOT EXISTS idx_entries_createdAt ON entries(createdAt);
       CREATE INDEX IF NOT EXISTS idx_cookies_entryId ON cookies(entryId);
+      CREATE INDEX IF NOT EXISTS idx_presets_key ON presets(key);
+      CREATE INDEX IF NOT EXISTS idx_preset_cookies_presetId ON preset_cookies(presetId);
     `);
   }
   return db;
@@ -197,5 +221,156 @@ export function closeDb() {
     db.close();
     db = null;
   }
+}
+
+// ========== PRESET FUNCTIONS ==========
+
+function dbToPreset(row: any, cookies: any[]): Preset {
+  return {
+    id: row.id,
+    key: row.key,
+    type: row.type,
+    name: row.name,
+    group: row.grp,
+    cookies: cookies.map((c) => ({
+      name: c.name,
+      domain: c.domain || undefined,
+      httpOnly: c.httpOnly === 1,
+      secure: c.secure === 1,
+      sameSite: (c.sameSite as 'Strict' | 'Lax' | 'None') || undefined,
+      prioritas: c.prioritas || undefined,
+    })),
+    createdAt: row.createdAt,
+    updatedAt: row.updatedAt,
+  };
+}
+
+export function getAllPresets(): Preset[] {
+  const database = getDb();
+  const presetRows = database
+    .prepare('SELECT * FROM presets ORDER BY grp, name')
+    .all() as any[];
+
+  const presets: Preset[] = [];
+
+  for (const row of presetRows) {
+    const cookies = database
+      .prepare('SELECT * FROM preset_cookies WHERE presetId = ?')
+      .all(row.id) as any[];
+
+    presets.push(dbToPreset(row, cookies));
+  }
+
+  return presets;
+}
+
+export function getPresetByKey(key: string): Preset | null {
+  const database = getDb();
+  const presetRow = database.prepare('SELECT * FROM presets WHERE key = ?').get(key) as any;
+
+  if (!presetRow) return null;
+
+  const cookies = database
+    .prepare('SELECT * FROM preset_cookies WHERE presetId = ?')
+    .all(presetRow.id) as any[];
+
+  return dbToPreset(presetRow, cookies);
+}
+
+export function getPresetById(id: number): Preset | null {
+  const database = getDb();
+  const presetRow = database.prepare('SELECT * FROM presets WHERE id = ?').get(id) as any;
+
+  if (!presetRow) return null;
+
+  const cookies = database
+    .prepare('SELECT * FROM preset_cookies WHERE presetId = ?')
+    .all(presetRow.id) as any[];
+
+  return dbToPreset(presetRow, cookies);
+}
+
+export function addPreset(preset: Omit<Preset, 'id' | 'createdAt' | 'updatedAt'>): Preset {
+  const database = getDb();
+  const now = Date.now();
+
+  const transaction = database.transaction(() => {
+    // Insert preset
+    const result = database
+      .prepare(
+        'INSERT INTO presets (key, type, name, grp, createdAt, updatedAt) VALUES (?, ?, ?, ?, ?, ?)'
+      )
+      .run(preset.key, preset.type, preset.name, preset.group, now, now);
+
+    const presetId = result.lastInsertRowid as number;
+
+    // Insert preset cookies
+    const insertCookie = database.prepare(
+      'INSERT INTO preset_cookies (presetId, name, domain, httpOnly, secure, sameSite, prioritas) VALUES (?, ?, ?, ?, ?, ?, ?)'
+    );
+
+    for (const cookie of preset.cookies) {
+      insertCookie.run(
+        presetId,
+        cookie.name,
+        cookie.domain || null,
+        cookie.httpOnly ? 1 : 0,
+        cookie.secure ? 1 : 0,
+        cookie.sameSite || null,
+        cookie.prioritas || null
+      );
+    }
+
+    return presetId;
+  });
+
+  const presetId = transaction();
+  return getPresetById(presetId as number)!;
+}
+
+export function updatePreset(
+  id: number,
+  preset: Omit<Preset, 'id' | 'createdAt' | 'updatedAt'>
+): Preset | null {
+  const database = getDb();
+  const now = Date.now();
+
+  const transaction = database.transaction(() => {
+    // Update preset
+    database
+      .prepare(
+        'UPDATE presets SET key = ?, type = ?, name = ?, grp = ?, updatedAt = ? WHERE id = ?'
+      )
+      .run(preset.key, preset.type, preset.name, preset.group, now, id);
+
+    // Delete old cookies
+    database.prepare('DELETE FROM preset_cookies WHERE presetId = ?').run(id);
+
+    // Insert new cookies
+    const insertCookie = database.prepare(
+      'INSERT INTO preset_cookies (presetId, name, domain, httpOnly, secure, sameSite, prioritas) VALUES (?, ?, ?, ?, ?, ?, ?)'
+    );
+
+    for (const cookie of preset.cookies) {
+      insertCookie.run(
+        id,
+        cookie.name,
+        cookie.domain || null,
+        cookie.httpOnly ? 1 : 0,
+        cookie.secure ? 1 : 0,
+        cookie.sameSite || null,
+        cookie.prioritas || null
+      );
+    }
+  });
+
+  transaction();
+  return getPresetById(id);
+}
+
+export function deletePreset(id: number): boolean {
+  const database = getDb();
+  const result = database.prepare('DELETE FROM presets WHERE id = ?').run(id);
+  return result.changes > 0;
 }
 

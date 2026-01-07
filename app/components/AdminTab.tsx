@@ -1,16 +1,17 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { PlusCircle, Film, Camera, PlayCircle, Music2, RotateCcw, Save, List, Tv, Settings, User, Brain, Code } from 'lucide-react';
-import { Entry, Cookie } from '@/app/types';
+import { Entry, Cookie, Preset } from '@/app/types';
 import { useLocalStorage } from '@/app/hooks/useLocalStorage';
 import { useTimer } from '@/app/hooks/useTimer';
 import { addEntry, deleteEntry } from '@/app/utils/storage';
-import { getPreset, getPresetsByGroup } from '@/app/utils/presets';
+import { fetchPresets, getPresetsByGroup, applyPreset as applyPresetUtil } from '@/app/utils/presetApi';
 import { useToast } from './ToastContext';
 import Statistics from './Statistics';
 import EntryCard from './EntryCard';
 import CookieForm from './CookieForm';
+import PresetManager from './PresetManager';
 
 export default function AdminTab() {
   const { entries, refreshEntries } = useLocalStorage();
@@ -21,40 +22,36 @@ export default function AdminTab() {
   const [cookies, setCookies] = useState<Cookie[]>([{ name: '', value: '' }]);
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
-  const [activePreset, setActivePreset] = useState<string | null>(null);
+  const [activePreset, setActivePreset] = useState<Preset | null>(null);
+  const [presets, setPresets] = useState<Preset[]>([]);
+  const [showAdvanced, setShowAdvanced] = useState(false);
 
-  const applyPreset = (type: string) => {
-    const preset = getPreset(type);
-    if (!preset) return;
+  const loadPresets = useCallback(async () => {
+    try {
+      const data = await fetchPresets();
+      setPresets(data);
+    } catch (error) {
+      console.error('Failed to load presets:', error);
+    }
+  }, []);
 
-    setWebsiteName(preset.name);
-    setActivePreset(type);
+  useEffect(() => {
+    loadPresets();
+  }, [loadPresets]);
 
-    if (preset.type === 'simple') {
-      // Netflix: hanya cookies sederhana (name, value)
-      const presetCookies: Cookie[] = preset.cookies.map((name) => ({ name, value: '' }));
-      setCookies(presetCookies);
+  const applyPreset = (preset: Preset) => {
+    const result = applyPresetUtil(preset);
+    setWebsiteName(result.websiteName);
+    setCookies(result.cookies.length > 0 ? result.cookies : [{ name: '', value: '' }]);
+    setShowAdvanced(result.showAdvanced);
+    setActivePreset(preset);
+
+    if (preset.type === 'credentials') {
       setUsername('');
       setPassword('');
-    } else if (preset.type === 'full') {
-      // BStation: cookies dengan field lengkap
-      const presetCookies: Cookie[] = preset.cookies.map((cookie) => ({
-        name: cookie.name,
-        value: '',
-        domain: cookie.domain,
-        httpOnly: cookie.httpOnly,
-        secure: cookie.secure,
-        sameSite: cookie.sameSite,
-        prioritas: cookie.prioritas,
-      }));
-      setCookies(presetCookies);
+    } else {
       setUsername('');
       setPassword('');
-    } else if (preset.type === 'credentials') {
-      // HBO Go: hanya username dan password
-      setUsername(preset.username || '');
-      setPassword(preset.password || '');
-      setCookies([]);
     }
 
     showToast('Preset Loaded', `${preset.name} template applied.`, 'info');
@@ -66,6 +63,7 @@ export default function AdminTab() {
     setUsername('');
     setPassword('');
     setActivePreset(null);
+    setShowAdvanced(false);
   };
 
   const handleSave = async () => {
@@ -75,13 +73,12 @@ export default function AdminTab() {
       return;
     }
 
-    const preset = activePreset ? getPreset(activePreset) : null;
     const validCookies = cookies.filter((c) => c.name.trim() && c.value.trim());
     const hasUsername = username.trim();
     const hasPassword = password.trim();
 
     // Validasi sesuai jenis preset
-    if (preset?.type === 'credentials') {
+    if (activePreset?.type === 'credentials') {
       // HBO Go: harus ada username atau password
       if (!hasUsername && !hasPassword) {
         showToast('Error', 'Username or Password is required', 'error');
@@ -126,6 +123,9 @@ export default function AdminTab() {
     <div className="fade-in">
       <Statistics activeEntries={entries.length} totalCookies={totalCookies} />
 
+      {/* Preset Manager */}
+      <PresetManager presets={presets} onPresetsChange={loadPresets} />
+
       {/* Create New Entry Form */}
       <div className="bg-dark-800 border border-slate-700 rounded-xl p-6 mb-8 shadow-lg">
         <div className="flex justify-between items-center mb-6 border-b border-slate-700 pb-4">
@@ -140,65 +140,54 @@ export default function AdminTab() {
         <div className="mb-6">
           <label className="block text-sm font-medium text-slate-400 mb-3">Quick Presets</label>
           <div className="space-y-4">
-            {Object.entries(getPresetsByGroup()).map(([groupName, presets]) => (
-              <div key={groupName} className="bg-dark-900/50 border border-slate-700 rounded-lg p-3">
-                <div className="flex items-center gap-2 mb-2">
-                  {groupName === 'streaming' && <PlayCircle className="w-4 h-4 text-blue-400" />}
-                  {groupName === 'ai' && <Brain className="w-4 h-4 text-green-400" />}
-                  <span className="text-xs font-semibold text-slate-400 uppercase tracking-wide">
-                    {groupName}
-                  </span>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  {presets.map(({ key, preset }) => {
-                    const isActive = activePreset === key;
-                    let buttonClass = '';
-                    let icon = null;
+            {presets.length === 0 ? (
+              <p className="text-sm text-slate-500 italic">Belum ada preset. Buat preset di Kelola Preset di atas.</p>
+            ) : (
+              Object.entries(getPresetsByGroup(presets)).map(([groupName, groupPresets]) => (
+                <div key={groupName} className="bg-dark-900/50 border border-slate-700 rounded-lg p-3">
+                  <div className="flex items-center gap-2 mb-2">
+                    {groupName === 'streaming' && <PlayCircle className="w-4 h-4 text-blue-400" />}
+                    {groupName === 'ai' && <Brain className="w-4 h-4 text-green-400" />}
+                    {!['streaming', 'ai'].includes(groupName) && <Settings className="w-4 h-4 text-slate-400" />}
+                    <span className="text-xs font-semibold text-slate-400 uppercase tracking-wide">
+                      {groupName}
+                    </span>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {groupPresets.map((preset) => {
+                      const isActive = activePreset?.id === preset.id;
+                      let buttonClass = 'bg-slate-700/30 border-slate-600 text-slate-300 hover:bg-slate-700/50';
+                      let icon = null;
 
-                    if (preset.name === 'Netflix') {
-                      buttonClass = 'bg-red-900/30 border-red-800 text-red-400 hover:bg-red-900/50';
-                      icon = <Film className="w-3 h-3" />;
-                    } else if (preset.name === 'HBO Go') {
-                      buttonClass = 'bg-purple-900/30 border-purple-800 text-purple-400 hover:bg-purple-900/50';
-                      icon = <User className="w-3 h-3" />;
-                    } else if (preset.name === 'BStation') {
-                      buttonClass = 'bg-blue-900/30 border-blue-800 text-blue-400 hover:bg-blue-900/50';
-                      icon = <Tv className="w-3 h-3" />;
-                    } else if (preset.name === 'ChatGPT') {
-                      buttonClass = 'bg-green-900/30 border-green-800 text-green-400 hover:bg-green-900/50';
-                      icon = <Brain className="w-3 h-3" />;
-                    } else if (preset.name === 'Disney+') {
-                      buttonClass = 'bg-blue-900/30 border-blue-800 text-blue-400 hover:bg-blue-900/50';
-                      icon = <Tv className="w-3 h-3" />;
-                    } else if (preset.name === 'Perplexity') {
-                      buttonClass = 'bg-blue-900/30 border-blue-800 text-blue-400 hover:bg-blue-900/50';
-                      icon = <Brain className="w-3 h-3" />;
-                    } else if (preset.name === 'Merlin AI') {
-                      buttonClass = 'bg-purple-900/30 border-purple-800 text-purple-400 hover:bg-purple-900/50';
-                      icon = <User className="w-3 h-3" />;
-                    } else if (preset.name === 'Cursor') {
-                      buttonClass = 'bg-blue-900/30 border-blue-800 text-blue-400 hover:bg-blue-900/50';
-                      icon = <Code className="w-3 h-3" />;
-                    } else {
-                      buttonClass = 'bg-slate-700/30 border-slate-600 text-slate-300 hover:bg-slate-700/50';
-                    }
+                      // Color coding based on type
+                      if (preset.type === 'credentials') {
+                        buttonClass = 'bg-purple-900/30 border-purple-800 text-purple-400 hover:bg-purple-900/50';
+                        icon = <User className="w-3 h-3" />;
+                      } else if (preset.type === 'full') {
+                        buttonClass = 'bg-blue-900/30 border-blue-800 text-blue-400 hover:bg-blue-900/50';
+                        icon = <Tv className="w-3 h-3" />;
+                      } else {
+                        buttonClass = 'bg-green-900/30 border-green-800 text-green-400 hover:bg-green-900/50';
+                        icon = <Film className="w-3 h-3" />;
+                      }
 
-                    return (
-                      <button
-                        key={key}
-                        onClick={() => applyPreset(key)}
-                        className={`flex items-center gap-2 px-3 py-1.5 border rounded transition-colors text-sm ${
-                          isActive ? 'ring-2 ring-brand-500' : ''
-                        } ${buttonClass}`}
-                      >
-                        {icon}
-                        {preset.name}
-                      </button>
-                    );
-                  })}
+                      return (
+                        <button
+                          key={preset.id}
+                          onClick={() => applyPreset(preset)}
+                          className={`flex items-center gap-2 px-3 py-1.5 border rounded transition-colors text-sm ${
+                            isActive ? 'ring-2 ring-brand-500' : ''
+                          } ${buttonClass}`}
+                        >
+                          {icon}
+                          {preset.name}
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))
+            )}
             <div className="flex justify-end">
               <button
                 onClick={resetForm}
@@ -224,8 +213,8 @@ export default function AdminTab() {
           />
         </div>
 
-        {/* Username & Password - hanya untuk preset credentials (HBO Go) */}
-        {activePreset && getPreset(activePreset)?.type === 'credentials' && (
+        {/* Username & Password - hanya untuk preset credentials */}
+        {activePreset?.type === 'credentials' && (
           <div className="mb-4 grid grid-cols-2 gap-3">
             <div>
               <label className="block text-sm font-medium text-slate-300 mb-1">Username</label>
@@ -253,11 +242,11 @@ export default function AdminTab() {
         )}
 
         {/* Dynamic Cookie Fields - tidak untuk preset credentials */}
-        {(!activePreset || getPreset(activePreset)?.type !== 'credentials') && (
+        {(!activePreset || activePreset.type !== 'credentials') && (
           <CookieForm 
             cookies={cookies} 
             onChange={setCookies} 
-            showAdvanced={activePreset ? (getPreset(activePreset)?.type === 'full' ? true : false) : false}
+            showAdvanced={showAdvanced}
           />
         )}
 
