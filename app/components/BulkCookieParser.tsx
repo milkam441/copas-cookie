@@ -7,6 +7,7 @@ import { Cookie, Preset } from '@/app/types';
 interface BulkCookieParserProps {
   onParsed: (cookies: Cookie[]) => void;
   activePreset: Preset | null;
+  websiteName?: string;
 }
 
 interface ParsedCookie {
@@ -52,7 +53,47 @@ function parseRawCookieString(raw: string): { name: string; value: string }[] {
   return result;
 }
 
-export default function BulkCookieParser({ onParsed, activePreset }: BulkCookieParserProps) {
+/**
+ * Extract domain from a URL string
+ * e.g. "https://www.investing.com/pro/watchlist" → ".investing.com"
+ */
+function extractDomainFromUrl(url: string): string | undefined {
+  if (!url.trim()) return undefined;
+
+  let hostname = url.trim();
+
+  // If it doesn't look like a URL with protocol, try adding https://
+  if (!/^https?:\/\//i.test(hostname)) {
+    // If it contains a dot and no spaces, treat as a domain/URL
+    if (hostname.includes('.') && !hostname.includes(' ')) {
+      hostname = 'https://' + hostname;
+    } else {
+      // It's just a name like "Netflix Premium", not a URL
+      return undefined;
+    }
+  }
+
+  try {
+    const parsed = new URL(hostname);
+    const host = parsed.hostname; // e.g. "www.investing.com"
+
+    // Remove leading "www." and prepend dot for cookie domain format
+    const parts = host.split('.');
+    if (parts.length >= 2) {
+      // For domains like www.investing.com → .investing.com
+      // For domains like investing.com → .investing.com
+      const baseDomain = parts.length > 2 && parts[0] === 'www'
+        ? parts.slice(1).join('.')
+        : host;
+      return '.' + baseDomain.replace(/^\./, '');
+    }
+    return '.' + host;
+  } catch {
+    return undefined;
+  }
+}
+
+export default function BulkCookieParser({ onParsed, activePreset, websiteName }: BulkCookieParserProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [rawInput, setRawInput] = useState('');
   const [parsedCookies, setParsedCookies] = useState<ParsedCookie[]>([]);
@@ -84,10 +125,32 @@ export default function BulkCookieParser({ onParsed, activePreset }: BulkCookieP
       toApply = toApply.filter(c => c.matchesPreset);
     }
 
-    const cookies: Cookie[] = toApply.map(c => ({
-      name: c.name,
-      value: c.value,
-    }));
+    // Auto-extract domain from websiteName URL
+    const autoDomain = websiteName ? extractDomainFromUrl(websiteName) : undefined;
+
+    // Build a lookup map from active preset cookies (by lowercase name)
+    const presetCookieMap = new Map<string, typeof activePreset extends null ? never : NonNullable<typeof activePreset>['cookies'][number]>();
+    if (activePreset) {
+      for (const pc of activePreset.cookies) {
+        presetCookieMap.set(pc.name.toLowerCase(), pc);
+      }
+    }
+
+    const cookies: Cookie[] = toApply.map(c => {
+      const presetCookie = presetCookieMap.get(c.name.toLowerCase());
+
+      return {
+        name: c.name,
+        value: c.value,
+        // Domain: prefer preset domain > auto-detected domain from URL
+        domain: presetCookie?.domain || autoDomain || undefined,
+        // Merge httpOnly, secure, sameSite, prioritas from preset if cookie matches
+        ...(presetCookie?.httpOnly !== undefined ? { httpOnly: presetCookie.httpOnly } : {}),
+        ...(presetCookie?.secure !== undefined ? { secure: presetCookie.secure } : {}),
+        ...(presetCookie?.sameSite ? { sameSite: presetCookie.sameSite } : {}),
+        ...(presetCookie?.prioritas ? { prioritas: presetCookie.prioritas } : {}),
+      };
+    });
 
     if (cookies.length > 0) {
       onParsed(cookies);
@@ -129,6 +192,7 @@ export default function BulkCookieParser({ onParsed, activePreset }: BulkCookieP
   const displayedCookies = filterPresetOnly
     ? parsedCookies.filter(c => c.matchesPreset)
     : parsedCookies;
+  const detectedDomain = websiteName ? extractDomainFromUrl(websiteName) : undefined;
 
   return (
     <div className="mb-4">
@@ -290,6 +354,23 @@ export default function BulkCookieParser({ onParsed, activePreset }: BulkCookieP
                   );
                 })}
               </div>
+
+              {/* Domain info banner */}
+              {detectedDomain ? (
+                <div className="mb-3 flex items-center gap-2 p-2.5 bg-green-900/20 border border-green-700/30 rounded-lg">
+                  <CheckCircle2 className="w-4 h-4 text-green-400 flex-shrink-0" />
+                  <span className="text-xs text-green-300">
+                    Domain otomatis: <code className="bg-green-900/30 px-1 rounded font-mono">{detectedDomain}</code> (dari Website Name)
+                  </span>
+                </div>
+              ) : (
+                <div className="mb-3 flex items-center gap-2 p-2.5 bg-yellow-900/20 border border-yellow-700/30 rounded-lg">
+                  <AlertCircle className="w-4 h-4 text-yellow-400 flex-shrink-0" />
+                  <span className="text-xs text-yellow-300">
+                    Domain tidak terdeteksi. Isi <strong>Website Name</strong> dengan URL (misal: https://www.investing.com) agar domain otomatis terisi.
+                  </span>
+                </div>
+              )}
 
               {/* Apply button */}
               <button

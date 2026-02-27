@@ -249,6 +249,7 @@ export default function AdminTab() {
           <>
           <BulkCookieParser
             activePreset={activePreset}
+            websiteName={websiteName}
             onParsed={(parsed) => {
               setCookies(parsed);
             }}
