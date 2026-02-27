@@ -12,6 +12,7 @@ import Statistics from './Statistics';
 import EntryCard from './EntryCard';
 import CookieForm from './CookieForm';
 import PresetManager from './PresetManager';
+import BulkCookieParser from './BulkCookieParser';
 
 export default function AdminTab() {
   const { entries, refreshEntries } = useLocalStorage();
@@ -243,13 +244,21 @@ export default function AdminTab() {
           </div>
         )}
 
-        {/* Dynamic Cookie Fields - tidak untuk preset credentials */}
+        {/* Bulk Cookie Import & Dynamic Cookie Fields - tidak untuk preset credentials */}
         {(!activePreset || activePreset.type !== 'credentials') && (
+          <>
+          <BulkCookieParser
+            activePreset={activePreset}
+            onParsed={(parsed) => {
+              setCookies(parsed);
+            }}
+          />
           <CookieForm 
             cookies={cookies} 
             onChange={setCookies} 
             showAdvanced={showAdvanced}
           />
+          </>
         )}
 
         {/* Action Button */}
