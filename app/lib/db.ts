@@ -15,6 +15,41 @@ if (!fs.existsSync(dbDir)) {
 // Initialize database
 let db: Database.Database | null = null;
 
+function getTableColumns(database: Database.Database, tableName: string): string[] {
+  const rows = database.prepare(`PRAGMA table_info(${tableName})`).all() as Array<{ name: string }>;
+  return rows.map((row) => row.name);
+}
+
+function ensurePresetSchema(database: Database.Database) {
+  const columns = new Set(getTableColumns(database, 'presets'));
+
+  // Older DBs might have used a different group column name or missed timestamps.
+  if (!columns.has('grp')) {
+    database.exec("ALTER TABLE presets ADD COLUMN grp TEXT NOT NULL DEFAULT 'other'");
+  }
+
+  if (!columns.has('createdAt')) {
+    database.exec('ALTER TABLE presets ADD COLUMN createdAt INTEGER NOT NULL DEFAULT 0');
+  }
+
+  if (!columns.has('updatedAt')) {
+    database.exec('ALTER TABLE presets ADD COLUMN updatedAt INTEGER NOT NULL DEFAULT 0');
+  }
+
+  const refreshedColumns = new Set(getTableColumns(database, 'presets'));
+  if (refreshedColumns.has('group') && refreshedColumns.has('grp')) {
+    database.exec('UPDATE presets SET grp = COALESCE(NULLIF("group", ""), grp)');
+  }
+
+  const now = Date.now();
+  database
+    .prepare('UPDATE presets SET createdAt = ? WHERE createdAt IS NULL OR createdAt = 0')
+    .run(now);
+  database
+    .prepare('UPDATE presets SET updatedAt = createdAt WHERE updatedAt IS NULL OR updatedAt = 0')
+    .run();
+}
+
 function getDb(): Database.Database {
   if (!db) {
     db = new Database(dbPath);
@@ -70,6 +105,8 @@ function getDb(): Database.Database {
       CREATE INDEX IF NOT EXISTS idx_presets_key ON presets(key);
       CREATE INDEX IF NOT EXISTS idx_preset_cookies_presetId ON preset_cookies(presetId);
     `);
+
+    ensurePresetSchema(db);
   }
   return db;
 }

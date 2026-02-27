@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { deleteExpiredEntries } from '@/app/lib/db';
 
+export const runtime = 'nodejs';
+
 export async function POST() {
   try {
     const deletedCount = deleteExpiredEntries();

@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getAllPresets, addPreset } from '@/app/lib/db';
 import { PresetCookie } from '@/app/types';
 
+export const runtime = 'nodejs';
+
 export async function GET() {
   try {
     const presets = getAllPresets();

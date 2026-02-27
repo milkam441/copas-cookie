@@ -2,16 +2,38 @@ import { Entry, Cookie } from '@/app/types';
 
 const API_BASE = '/api/entries';
 
+async function safeReadJson<T>(res: Response): Promise<T | null> {
+  try {
+    const contentType = res.headers.get('content-type') || '';
+    const raw = await res.text();
+
+    if (!raw) return null;
+
+    if (contentType.includes('application/json')) {
+      return JSON.parse(raw) as T;
+    }
+
+    if (raw.trim().startsWith('{') || raw.trim().startsWith('[')) {
+      return JSON.parse(raw) as T;
+    }
+
+    return null;
+  } catch {
+    return null;
+  }
+}
+
 export async function getEntries(): Promise<Entry[]> {
   try {
     const response = await fetch(API_BASE);
     if (!response.ok) {
-      throw new Error('Failed to fetch entries');
+      return [];
     }
-    const data = await response.json();
+    const data = await safeReadJson<{ entries?: Entry[] }>(response);
+    if (!data) return [];
     return data.entries || [];
   } catch (error) {
-    console.error('Error fetching entries:', error);
+    console.warn('Unable to fetch entries. Returning empty list.');
     return [];
   }
 }
@@ -36,16 +58,19 @@ export async function addEntry(
       }),
     });
 
+    const data = await safeReadJson<{ entry?: Entry; error?: string }>(response);
+
     if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.error || 'Failed to add entry');
+      throw new Error(data?.error || `Failed to add entry (${response.status})`);
     }
 
-    const data = await response.json();
+    if (!data?.entry) {
+      throw new Error('Invalid entry response');
+    }
+
     return data.entry;
   } catch (error) {
-    console.error('Error adding entry:', error);
-    throw error;
+    throw error instanceof Error ? error : new Error('Failed to add entry');
   }
 }
 
@@ -55,13 +80,13 @@ export async function deleteEntry(id: number): Promise<void> {
       method: 'DELETE',
     });
 
+    const data = await safeReadJson<{ error?: string }>(response);
+
     if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.error || 'Failed to delete entry');
+      throw new Error(data?.error || `Failed to delete entry (${response.status})`);
     }
   } catch (error) {
-    console.error('Error deleting entry:', error);
-    throw error;
+    throw error instanceof Error ? error : new Error('Failed to delete entry');
   }
 }
 

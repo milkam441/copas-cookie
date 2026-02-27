@@ -103,7 +103,8 @@ export default function AdminTab() {
       refreshEntries();
       showToast('Success', 'Entry added successfully!', 'success');
     } catch (error) {
-      showToast('Error', 'Failed to save entry. Please try again.', 'error');
+      const message = error instanceof Error ? error.message : 'Failed to save entry. Please try again.';
+      showToast('Error', message, 'error');
     }
   };
 
@@ -113,7 +114,8 @@ export default function AdminTab() {
       refreshEntries();
       showToast('Deleted', 'Entry removed.', 'info');
     } catch (error) {
-      showToast('Error', 'Failed to delete entry. Please try again.', 'error');
+      const message = error instanceof Error ? error.message : 'Failed to delete entry. Please try again.';
+      showToast('Error', message, 'error');
     }
   };
 

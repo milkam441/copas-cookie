@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getPresetById, updatePreset, deletePreset } from '@/app/lib/db';
 import { PresetCookie } from '@/app/types';
 
+export const runtime = 'nodejs';
+
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }

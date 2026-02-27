@@ -1,6 +1,6 @@
 'use client';
 
-import { Trash, Clock, Timer, User, Lock, Copy } from 'lucide-react';
+import { Trash, Clock, Timer, User, Lock, Copy, Code } from 'lucide-react';
 import { Entry } from '@/app/types';
 import CookieItem from './CookieItem';
 import { FormattedTime } from '@/app/utils/formatTime';
@@ -18,6 +18,29 @@ export default function EntryCard({ entry, timer, progress, onDelete, variant = 
   const timerColor = timer.isUrgent ? 'text-red-400' : variant === 'admin' ? 'text-yellow-400' : 'text-green-400';
   const { showToast } = useToast();
 
+  const buildCookieSnippet = () => {
+    const snippetCookies = entry.cookies.map((cookie) => ({
+      name: cookie.name || '',
+      value: cookie.value || '',
+      domain: cookie.domain || '',
+      path: '/',
+      secure: Boolean(cookie.secure),
+      sameSite: cookie.secure ? 'none' : (cookie.sameSite ? cookie.sameSite.toLowerCase() : ''),
+    }));
+
+    return `// Cookie Injector Snippet
+const cookies = ${JSON.stringify(snippetCookies, null, 2)};
+
+cookies.forEach(c => {
+  const securePart = c.secure ? '; secure' : '';
+  const sameSitePart = c.sameSite ? \`; samesite=${'${c.sameSite}'}\` : '';
+  document.cookie = \`${'${c.name}'}=${'${c.value}'}; domain=${'${c.domain}'}; path=${'${c.path}'}${'${securePart}'}${'${sameSitePart}'}\`;
+});
+
+console.log("✅ Cookie injected! Refreshing...");
+location.reload();`;
+  };
+
   const handleCopyCredentials = async (text: string, label: string) => {
     try {
       if (navigator.clipboard && navigator.clipboard.writeText) {
@@ -33,8 +56,30 @@ export default function EntryCard({ entry, timer, progress, onDelete, variant = 
         document.body.removeChild(textArea);
       }
       showToast('Copied!', `${label} copied to clipboard.`, 'success');
-    } catch (err) {
+    } catch {
       showToast('Error', 'Failed to copy to clipboard', 'error');
+    }
+  };
+
+  const handleCopySnippet = async () => {
+    const snippet = buildCookieSnippet();
+
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(snippet);
+      } else {
+        const textArea = document.createElement('textarea');
+        textArea.value = snippet;
+        textArea.style.position = 'fixed';
+        textArea.style.left = '-999999px';
+        document.body.appendChild(textArea);
+        textArea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textArea);
+      }
+      showToast('Copied!', 'Cookie snippet copied. Paste it into console and run.', 'success');
+    } catch {
+      showToast('Error', 'Failed to copy snippet to clipboard', 'error');
     }
   };
 
@@ -58,14 +103,24 @@ export default function EntryCard({ entry, timer, progress, onDelete, variant = 
                 <span>{timer.text}</span> remaining
               </span>
             </div>
-            {onDelete && (
+            <div className="flex items-center gap-2">
               <button
-                onClick={() => onDelete(entry.id)}
-                className="p-2 text-slate-400 hover:text-red-400 hover:bg-red-900/20 rounded transition-colors"
+                onClick={handleCopySnippet}
+                className="text-xs bg-brand-600/10 hover:bg-brand-600/30 text-brand-400 hover:text-brand-300 border border-brand-600/30 px-2.5 py-1.5 rounded transition-all flex items-center gap-1 font-semibold"
+                title="Copy console snippet"
               >
-                <Trash className="w-4 h-4" />
+                <Code className="w-3 h-3" />
+                Snippet
               </button>
-            )}
+              {onDelete && (
+                <button
+                  onClick={() => onDelete(entry.id)}
+                  className="p-2 text-slate-400 hover:text-red-400 hover:bg-red-900/20 rounded transition-colors"
+                >
+                  <Trash className="w-4 h-4" />
+                </button>
+              )}
+            </div>
           </div>
 
           {/* Username & Password */}
@@ -120,12 +175,22 @@ export default function EntryCard({ entry, timer, progress, onDelete, variant = 
     <div className="bg-dark-800 border border-slate-700 rounded-xl p-4 shadow-sm hover:border-brand-500/50 transition-colors">
       <div className="flex justify-between items-center mb-3">
         <h4 className="font-bold text-lg text-white">{entry.website}</h4>
-        <span
-          className={`text-xs bg-dark-900 px-2 py-1 rounded border border-slate-700 font-mono ${timerColor} flex items-center gap-1`}
-        >
-          <Timer className="w-3 h-3" />
-          <span>{timer.text}</span>
-        </span>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={handleCopySnippet}
+            className="text-xs bg-brand-600/10 hover:bg-brand-600/30 text-brand-400 hover:text-brand-300 border border-brand-600/30 px-3 py-1.5 rounded transition-all flex items-center gap-1 font-semibold"
+            title="Copy console snippet"
+          >
+            <Code className="w-3 h-3" />
+            Copy Snippet
+          </button>
+          <span
+            className={`text-xs bg-dark-900 px-2 py-1 rounded border border-slate-700 font-mono ${timerColor} flex items-center gap-1`}
+          >
+            <Timer className="w-3 h-3" />
+            <span>{timer.text}</span>
+          </span>
+        </div>
       </div>
 
       {/* Username & Password */}

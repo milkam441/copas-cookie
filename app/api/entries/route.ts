@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getAllEntries, addEntry, deleteExpiredEntries } from '@/app/lib/db';
 import { Entry, Cookie } from '@/app/types';
 
+export const runtime = 'nodejs';
+
 // Clean expired entries on startup and periodically
 deleteExpiredEntries();
 
