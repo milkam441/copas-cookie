@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { X, HelpCircle, Search, Code } from 'lucide-react';
+import { X, HelpCircle, Search, Code, MousePointer } from 'lucide-react';
 
 interface FAQModalProps {
   isOpen: boolean;
@@ -9,7 +9,7 @@ interface FAQModalProps {
 }
 
 export default function FAQModal({ isOpen, onClose }: FAQModalProps) {
-  const [activeTab, setActiveTab] = useState<'credentials' | 'snippets'>('credentials');
+  const [activeTab, setActiveTab] = useState<'basic' | 'credentials' | 'snippets'>('basic');
 
   if (!isOpen) return null;
 
@@ -32,6 +32,17 @@ export default function FAQModal({ isOpen, onClose }: FAQModalProps) {
 
         {/* Tabs */}
         <div className="flex border-b border-slate-700 bg-dark-900">
+          <button
+            onClick={() => setActiveTab('basic')}
+            className={`flex-1 px-6 py-4 text-sm font-medium transition-all duration-200 flex items-center justify-center gap-2 ${
+              activeTab === 'basic'
+                ? 'bg-dark-800 text-brand-400 border-b-2 border-brand-500'
+                : 'text-slate-400 hover:text-white hover:bg-dark-800/50'
+            }`}
+          >
+            <MousePointer className="w-4 h-4" />
+            Basic
+          </button>
           <button
             onClick={() => setActiveTab('credentials')}
             className={`flex-1 px-6 py-4 text-sm font-medium transition-all duration-200 flex items-center justify-center gap-2 ${
@@ -58,6 +69,97 @@ export default function FAQModal({ isOpen, onClose }: FAQModalProps) {
 
         {/* Content */}
         <div className="flex-1 overflow-y-auto p-6">
+          {activeTab === 'basic' && (
+            <div className="space-y-4">
+              <div>
+                <h3 className="text-lg font-semibold text-white mb-2 flex items-center gap-2">
+                  <MousePointer className="w-5 h-5 text-green-400" />
+                  Cara Manual via Application Tab (Basic)
+                </h3>
+                <p className="text-slate-300 text-sm leading-relaxed">
+                  Cara paling dasar untuk memasukkan cookie satu per satu melalui DevTools browser. Cocok untuk pemula yang baru pertama kali menggunakan.
+                </p>
+              </div>
+
+              <div className="bg-dark-900 border border-slate-700 rounded-lg p-4 space-y-3">
+                <h4 className="text-sm font-semibold text-green-300">Langkah-langkah:</h4>
+                <ol className="list-decimal list-inside space-y-3 text-sm text-slate-300">
+                  <li>
+                    <span className="font-medium text-white">Buka Website Tujuan</span>
+                    <ul className="list-disc list-inside ml-6 mt-1 space-y-1 text-slate-400">
+                      <li>Buka website yang ingin Anda masuki di browser (Chrome/Edge/Firefox)</li>
+                      <li>Pastikan Anda sudah berada di halaman website tersebut</li>
+                    </ul>
+                  </li>
+                  <li>
+                    <span className="font-medium text-white">Buka DevTools (Inspect)</span>
+                    <ul className="list-disc list-inside ml-6 mt-1 space-y-1 text-slate-400">
+                      <li><span className="text-yellow-400">Klik kanan</span> di mana saja pada halaman website</li>
+                      <li>Pilih <span className="text-yellow-400">"Inspect"</span> atau <span className="text-yellow-400">"Inspeksi"</span> dari menu yang muncul</li>
+                      <li>Atau gunakan shortcut: <span className="text-yellow-400">F12</span> atau <span className="text-yellow-400">Ctrl + Shift + I</span></li>
+                    </ul>
+                  </li>
+                  <li>
+                    <span className="font-medium text-white">Masuk ke Tab Application</span>
+                    <ul className="list-disc list-inside ml-6 mt-1 space-y-1 text-slate-400">
+                      <li>Di panel DevTools, cari dan klik tab <span className="text-yellow-400">"Application"</span></li>
+                      <li>Jika tidak terlihat, klik tanda <span className="text-yellow-400">&gt;&gt;</span> untuk melihat tab tersembunyi</li>
+                    </ul>
+                  </li>
+                  <li>
+                    <span className="font-medium text-white">Pilih Cookies</span>
+                    <ul className="list-disc list-inside ml-6 mt-1 space-y-1 text-slate-400">
+                      <li>Di sidebar kiri, cari bagian <span className="text-yellow-400">"Storage"</span></li>
+                      <li>Klik <span className="text-yellow-400">"Cookies"</span> untuk expand</li>
+                      <li>Pilih <span className="text-yellow-400">URL yang pertama</span> (domain website tujuan)</li>
+                    </ul>
+                  </li>
+                  <li>
+                    <span className="font-medium text-white">Masukkan Cookie</span>
+                    <ul className="list-disc list-inside ml-6 mt-1 space-y-1 text-slate-400">
+                      <li>Di area tabel cookie, <span className="text-yellow-400">double-click</span> pada baris kosong atau klik area kosong di bawah daftar cookie</li>
+                      <li>Pada kolom <span className="text-yellow-400">"Name"</span>, masukkan nama cookie sesuai yang ada di aplikasi ini</li>
+                      <li>Pada kolom <span className="text-yellow-400">"Value"</span>, masukkan value cookie sesuai yang ada di aplikasi ini</li>
+                      <li>Tekan <span className="text-yellow-400">Enter</span> atau <span className="text-yellow-400">Tab</span> untuk menyimpan</li>
+                      <li>Ulangi untuk setiap cookie yang perlu ditambahkan</li>
+                    </ul>
+                  </li>
+                  <li>
+                    <span className="font-medium text-white">Refresh Halaman</span>
+                    <ul className="list-disc list-inside ml-6 mt-1 space-y-1 text-slate-400">
+                      <li>Setelah semua cookie dimasukkan, tekan <span className="text-yellow-400">F5</span> atau <span className="text-yellow-400">Ctrl + R</span> untuk refresh</li>
+                      <li>Website seharusnya sudah mengenali Anda sebagai user yang logged in</li>
+                    </ul>
+                  </li>
+                </ol>
+              </div>
+
+              <div className="bg-blue-900/20 border border-blue-800 rounded-lg p-4">
+                <p className="text-xs text-blue-300">
+                  <strong className="text-blue-200">Tips:</strong> Pastikan Anda memasukkan Name dan Value cookie dengan benar (perhatikan huruf besar/kecil). Jika ada banyak cookie, gunakan cara <strong>Snippets</strong> agar lebih cepat.
+                </p>
+              </div>
+
+              <div className="bg-dark-900 border border-slate-700 rounded-lg p-4">
+                <h4 className="text-sm font-semibold text-green-300 mb-2">Contoh:</h4>
+                <div className="text-xs text-slate-400 font-mono bg-dark-800 p-3 rounded border border-slate-700 space-y-1">
+                  <div>Dari aplikasi ini:</div>
+                  <div className="ml-4">Cookie Name: <span className="text-white">session_id</span></div>
+                  <div className="ml-4">Cookie Value: <span className="text-white">abc123xyz789</span></div>
+                  <div className="mt-2 text-green-400">↓ Masukkan ke Application → Cookies ↓</div>
+                  <div className="mt-2">Kolom Name: <span className="text-white">session_id</span></div>
+                  <div>Kolom Value: <span className="text-white">abc123xyz789</span></div>
+                </div>
+              </div>
+
+              <div className="bg-amber-900/20 border border-amber-800 rounded-lg p-4">
+                <p className="text-xs text-amber-300">
+                  <strong className="text-amber-200">Catatan:</strong> Cara ini cocok jika cookie yang perlu dimasukkan hanya sedikit (1-3 cookie). Untuk jumlah yang banyak, disarankan menggunakan metode <strong>Snippets</strong> yang lebih efisien.
+                </p>
+              </div>
+            </div>
+          )}
+
           {activeTab === 'credentials' && (
             <div className="space-y-4">
               <div>
